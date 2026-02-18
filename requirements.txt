@@ -1,0 +1,67 @@
+# requirements.txt
+# Blockchain-Based Decentralized Voting Platform
+# Production and development dependencies are clearly separated.
+# Semantic versioning is strictly followed to ensure stability and compatibility.
+# This file is optimized for a production-grade system with pinned dependencies.
+
+##############################
+# Production Dependencies
+##############################
+# Core Python libraries for blockchain, cryptography, and web frameworks
+Flask==2.3.2                # Lightweight web framework for API development
+Flask-Cors==3.1.0           # Enable Cross-Origin Resource Sharing (CORS)
+gunicorn==21.2.0            # Production-grade WSGI HTTP server
+requests==2.31.0            # HTTP requests library for API interactions
+cryptography==41.0.3        # Secure cryptographic functions for blockchain
+PyJWT==2.8.0                # JSON Web Token implementation for authentication
+web3==6.5.0                 # Ethereum blockchain interaction library
+sqlalchemy==2.1.1           # Database ORM for managing persistent data
+psycopg2-binary==2.9.8      # PostgreSQL database adapter for Python
+python-dotenv==1.0.0        # Environment variable management
+marshmallow==3.20.1         # Data validation and serialization library
+celery==5.3.4               # Distributed task queue for asynchronous operations
+redis==5.0.0                # Redis client for Celery and caching
+structlog==23.2.0           # Structured logging for production-grade logs
+
+##############################
+# Development Dependencies
+##############################
+# Tools for testing, linting, and development
+pytest==7.4.2               # Testing framework
+pytest-cov==4.1.0           # Test coverage reporting
+tox==4.11.0                 # Automated testing across environments
+flake8==6.1.0               # Linting for Python code
+black==23.9.1               # Code formatter for consistent style
+isort==5.12.0               # Import sorting for cleaner code
+mypy==1.5.1                 # Static type checker for Python
+pre-commit==3.5.3           # Git hooks for enforcing code quality
+bandit==1.7.5               # Security linter for Python code
+safety==2.5.2               # Dependency vulnerability scanner
+
+##############################
+# Optional Dependencies
+##############################
+# Optional libraries for enhanced functionality
+uvloop==0.17.0              # High-performance asyncio event loop
+aioredis==2.0.1             # Async Redis client for advanced use cases
+fastapi==0.103.0            # Alternative to Flask for high-performance APIs
+pydantic==2.4.0             # Data validation and settings management
+
+##############################
+# Version Constraints
+##############################
+# Pinning dependencies to avoid breaking changes
+# Use `pip-tools` to manage dependency updates safely:
+# pip install pip-tools
+# pip-compile --output-file=requirements.txt requirements.in
+
+##############################
+# Notes
+##############################
+# - Ensure to use a virtual environment for dependency isolation.
+# - For production, install only production dependencies:
+#   pip install -r requirements.txt --no-dev
+# - For development, include dev dependencies:
+#   pip install -r requirements.txt
+# - Regularly audit dependencies for security vulnerabilities:
+#   safety check

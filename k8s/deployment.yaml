@@ -1,0 +1,169 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: voting-platform
+  namespace: production # Change namespace for dev/staging environments
+  labels:
+    app: voting-platform
+    environment: production # Environment identifier
+spec:
+  replicas: 3 # Number of replicas for high availability
+  selector:
+    matchLabels:
+      app: voting-platform
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25% # Ensure some pods are always available during updates
+      maxSurge: 50% # Allow extra pods during updates for smooth transitions
+  template:
+    metadata:
+      labels:
+        app: voting-platform
+    spec:
+      containers:
+        - name: voting-platform-backend
+          image: ${BACKEND_IMAGE} # Backend Docker image (e.g., registry.example.com/voting-backend:latest)
+          imagePullPolicy: Always # Always pull the latest image in production
+          ports:
+            - containerPort: 8000 # Backend service port
+          env:
+            - name: ENVIRONMENT
+              value: production # Set environment variable
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: DATABASE_URL # Secure database connection string
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: SECRET_KEY # Application secret key
+            - name: BLOCKCHAIN_NODE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: blockchain-secrets
+                  key: NODE_URL # Blockchain node URL
+          resources:
+            requests:
+              memory: "512Mi" # Minimum memory required
+              cpu: "500m" # Minimum CPU required
+            limits:
+              memory: "1Gi" # Maximum memory allowed
+              cpu: "1" # Maximum CPU allowed
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 10 # Delay before starting liveness checks
+            periodSeconds: 10 # Frequency of liveness checks
+            timeoutSeconds: 5 # Timeout for each liveness check
+            failureThreshold: 3 # Number of failures before restarting
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            initialDelaySeconds: 5 # Delay before starting readiness checks
+            periodSeconds: 10 # Frequency of readiness checks
+            timeoutSeconds: 5 # Timeout for each readiness check
+            failureThreshold: 3 # Number of failures before marking unready
+          securityContext:
+            runAsUser: 1000 # Non-root user for security
+            runAsGroup: 1000
+            readOnlyRootFilesystem: true # Prevent writing to root filesystem
+            allowPrivilegeEscalation: false # Prevent privilege escalation
+        - name: voting-platform-frontend
+          image: ${FRONTEND_IMAGE} # Frontend Docker image (e.g., registry.example.com/voting-frontend:latest)
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000 # Frontend service port
+          env:
+            - name: ENVIRONMENT
+              value: production
+            - name: API_URL
+              value: http://voting-platform-backend:8000 # Backend API URL
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+      imagePullSecrets:
+        - name: registry-credentials # Docker registry credentials for private images
+      restartPolicy: Always # Ensure pods are restarted if they fail
+      nodeSelector:
+        environment: production # Ensure pods are scheduled on production nodes
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: app
+                    operator: In
+                    values:
+                      - voting-platform
+              topologyKey: "kubernetes.io/hostname" # Prevent multiple pods on the same node
+      tolerations:
+        - key: "environment"
+          operator: "Equal"
+          value: "production"
+          effect: "NoSchedule" # Allow scheduling on production nodes only
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: db-credentials
+  namespace: production
+type: Opaque
+data:
+  DATABASE_URL: ${ENCODED_DATABASE_URL} # Base64-encoded database URL
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+  namespace: production
+type: Opaque
+data:
+  SECRET_KEY: ${ENCODED_SECRET_KEY} # Base64-encoded application secret key
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: blockchain-secrets
+  namespace: production
+type: Opaque
+data:
+  NODE_URL: ${ENCODED_NODE_URL} # Base64-encoded blockchain node URL
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: registry-credentials
+  namespace: production
+type: kubernetes.io/dockerconfigjson
+data:
+  .dockerconfigjson: ${ENCODED_DOCKER_CONFIG_JSON} # Base64-encoded Docker registry credentials

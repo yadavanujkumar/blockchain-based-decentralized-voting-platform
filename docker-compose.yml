@@ -1,0 +1,104 @@
+version: '3.9' # Use the latest stable version of Docker Compose
+
+# Docker Compose configuration for a local development environment
+# for a Blockchain-Based Decentralized Voting Platform.
+
+services:
+  api:
+    image: python:3.10-slim
+    container_name: voting_api
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000" # Expose the API on port 8000
+    environment:
+      # Environment variables for the API service
+      ENV: development # Change to 'staging' or 'production' for other environments
+      DEBUG: "1" # Enable debug mode for local development
+      DATABASE_URL: ${DATABASE_URL:-postgresql://voting_user:voting_password@db:5432/voting_db}
+      BLOCKCHAIN_NODE_URL: ${BLOCKCHAIN_NODE_URL:-http://blockchain_node:8545}
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key} # Replace with a secure key in production
+    volumes:
+      - ./api:/app # Mount the local API code for hot-reloading
+    working_dir: /app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      - db
+      - blockchain_node
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always # Automatically restart the container if it crashes
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  db:
+    image: postgres:15
+    container_name: voting_db
+    ports:
+      - "5432:5432" # Expose the database on port 5432
+    environment:
+      # Environment variables for the PostgreSQL database
+      POSTGRES_USER: ${POSTGRES_USER:-voting_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-voting_password}
+      POSTGRES_DB: ${POSTGRES_DB:-voting_db}
+    volumes:
+      - db_data:/var/lib/postgresql/data # Persist database data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-voting_user}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  blockchain_node:
+    image: ethereum/client-go:stable
+    container_name: blockchain_node
+    ports:
+      - "8545:8545" # Expose the blockchain node RPC on port 8545
+      - "30303:30303" # Expose the P2P port for blockchain communication
+    command: >
+      --dev
+      --http
+      --http.addr 0.0.0.0
+      --http.port 8545
+      --http.api personal,eth,net,web3
+      --ws
+      --ws.addr 0.0.0.0
+      --ws.port 8546
+      --ws.api personal,eth,net,web3
+      --allow-insecure-unlock
+    volumes:
+      - blockchain_data:/root/.ethereum # Persist blockchain data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8545"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  db_data:
+    driver: local # Persistent storage for the database
+  blockchain_data:
+    driver: local # Persistent storage for the blockchain node
+
+networks:
+  default:
+    driver: bridge # Use the default bridge network for container communication

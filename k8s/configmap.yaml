@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: decentralized-voting-config
+  namespace: voting-platform
+  labels:
+    app: decentralized-voting-platform
+    environment: production # Change to 'staging' or 'dev' for respective environments
+data:
+  # General application settings
+  APP_ENV: "production" # Environment identifier: dev, staging, or production
+  APP_DEBUG: "false" # Debug mode: should always be false in production
+  APP_PORT: "8000" # Port the application will run on
+  APP_HOST: "0.0.0.0" # Host binding for the application
+
+  # Database configuration
+  DATABASE_HOST: "${DB_HOST}" # Database hostname (use environment variable for sensitive data)
+  DATABASE_PORT: "5432" # Default PostgreSQL port
+  DATABASE_NAME: "voting_platform" # Database name
+  DATABASE_USER: "${DB_USER}" # Database username (use environment variable)
+  DATABASE_PASSWORD: "${DB_PASSWORD}" # Database password (use environment variable)
+  DATABASE_POOL_SIZE: "10" # Connection pool size for database
+  DATABASE_TIMEOUT: "30" # Timeout for database connections in seconds
+
+  # Blockchain settings
+  BLOCKCHAIN_NETWORK: "mainnet" # Blockchain network: mainnet, testnet, or devnet
+  BLOCKCHAIN_RPC_URL: "${BLOCKCHAIN_RPC_URL}" # RPC URL for blockchain interaction
+  BLOCKCHAIN_CONTRACT_ADDRESS: "${BLOCKCHAIN_CONTRACT_ADDRESS}" # Smart contract address
+  BLOCKCHAIN_TRANSACTION_TIMEOUT: "60" # Timeout for blockchain transactions in seconds
+
+  # Security settings
+  JWT_SECRET: "${JWT_SECRET}" # Secret key for JWT token signing
+  JWT_EXPIRATION: "3600" # JWT token expiration time in seconds
+  RATE_LIMIT_REQUESTS: "100" # Maximum number of requests per minute
+  RATE_LIMIT_BURST: "10" # Burst capacity for rate limiting
+  CORS_ALLOWED_ORIGINS: "*" # Allowed origins for CORS (use "*" for all or specify domains)
+
+  # Logging settings
+  LOG_LEVEL: "INFO" # Logging level: DEBUG, INFO, WARN, ERROR
+  LOG_FORMAT: "json" # Log format: json or plain
+  LOG_FILE: "/var/log/voting-platform/app.log" # Log file location
+  LOG_ROTATION_SIZE: "10MB" # Maximum size of a single log file before rotation
+  LOG_RETENTION_DAYS: "7" # Number of days to retain logs
+
+  # Performance tuning
+  WORKER_PROCESSES: "4" # Number of worker processes for the application
+  WORKER_THREADS: "8" # Number of threads per worker
+  REQUEST_TIMEOUT: "30" # Timeout for HTTP requests in seconds
+  KEEP_ALIVE_TIMEOUT: "5" # Keep-alive timeout for HTTP connections in seconds
+
+  # Cache settings
+  CACHE_BACKEND: "redis" # Cache backend: redis or memory
+  CACHE_HOST: "${CACHE_HOST}" # Redis hostname (use environment variable)
+  CACHE_PORT: "6379" # Redis port
+  CACHE_DB: "0" # Redis database index
+  CACHE_TTL: "300" # Default time-to-live for cache entries in seconds
+
+  # Email settings
+  EMAIL_HOST: "${EMAIL_HOST}" # SMTP server hostname
+  EMAIL_PORT: "587" # SMTP server port
+  EMAIL_USERNAME: "${EMAIL_USERNAME}" # SMTP username
+  EMAIL_PASSWORD: "${EMAIL_PASSWORD}" # SMTP password
+  EMAIL_USE_TLS: "true" # Use TLS for email
+  EMAIL_FROM_ADDRESS: "no-reply@voting-platform.com" # Default sender email address
+
+  # Monitoring and metrics
+  METRICS_ENABLED: "true" # Enable or disable metrics collection
+  METRICS_PORT: "9100" # Port for exposing metrics
+  METRICS_PATH: "/metrics" # Path for metrics endpoint
+  HEALTHCHECK_PATH: "/health" # Path for health check endpoint
+  HEALTHCHECK_INTERVAL: "30" # Interval for health checks in seconds
+
+  # Feature flags
+  FEATURE_VOTING_ENABLED: "true" # Enable or disable voting feature
+  FEATURE_RESULT_EXPORT: "true" # Enable or disable result export feature
+  FEATURE_REAL_TIME_UPDATES: "true" # Enable or disable real-time updates
+
+  # Example environment-specific overrides (use separate ConfigMaps for each environment)
+  # For development:
+  # APP_ENV: "dev"
+  # APP_DEBUG: "true"
+  # DATABASE_NAME: "voting_platform_dev"
+  # BLOCKCHAIN_NETWORK: "devnet"
+  # LOG_LEVEL: "DEBUG"
+
+  # For staging:
+  # APP_ENV: "staging"
+  # DATABASE_NAME: "voting_platform_staging"
+  # BLOCKCHAIN_NETWORK: "testnet"
+  # LOG_LEVEL: "INFO"

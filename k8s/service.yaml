@@ -1,0 +1,54 @@
+# Kubernetes Service Manifest for Blockchain-Based Decentralized Voting Platform
+# This configuration is production-ready and adheres to industry best practices.
+# It ensures proper environment separation, security, and performance tuning.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: voting-platform-api  # Name of the service
+  namespace: production      # Namespace for production environment
+  labels:
+    app: voting-platform      # Label to identify the application
+    environment: production    # Environment label for separation
+spec:
+  type: LoadBalancer          # Exposes the service externally using a cloud provider's load balancer
+  selector:
+    app: voting-platform-api  # Matches the pods with this label
+  ports:
+    - name: http              # HTTP port for external clients
+      protocol: TCP
+      port: 80                # External port exposed by the service
+      targetPort: 8080        # Internal port where the application listens
+    - name: https             # HTTPS port for external clients
+      protocol: TCP
+      port: 443               # External port for secure communication
+      targetPort: 8443        # Internal port for secure communication
+  sessionAffinity: None       # No session affinity (can be changed to "ClientIP" if sticky sessions are needed)
+  externalTrafficPolicy: Local # Ensures client IP preservation for security and debugging
+  loadBalancerIP: ${LOAD_BALANCER_IP} # Optional: Specify a static IP for the load balancer (use environment variable)
+
+  # Health check configuration
+  healthCheckNodePort: 32000  # NodePort for health checks (optional, depends on the cloud provider)
+
+  # Annotations for cloud provider-specific settings
+  # Example: AWS, GCP, Azure-specific configurations
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb" # Use Network Load Balancer for high performance
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: ${SSL_CERT_ARN} # SSL certificate ARN for HTTPS
+    service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: "3600" # Idle timeout for connections
+    service.beta.kubernetes.io/aws-load-balancer-security-groups: ${SECURITY_GROUPS} # Security groups for the load balancer
+
+  # Resource limits for the service
+  limits:
+    memory: "512Mi"           # Memory limit for the service
+    cpu: "500m"               # CPU limit for the service
+
+# Notes:
+# - Replace ${VAR} placeholders with actual environment variables or values.
+# - Ensure secrets like SSL_CERT_ARN and SECURITY_GROUPS are managed securely using Kubernetes Secrets or a vault.
+# - Adjust resource limits based on performance testing and expected traffic.
+
+# Example usage:
+# - For development, use a ClusterIP service type and local testing tools.
+# - For staging, use NodePort or LoadBalancer with minimal resources.
+# - For production, use LoadBalancer with proper annotations and scaling.
